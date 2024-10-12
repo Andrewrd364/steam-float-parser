@@ -6,8 +6,12 @@ import winsound
 import time
 from fake_useragent import UserAgent
 from random import uniform
+from collections import OrderedDict
 
 ua = UserAgent()
+
+MAX_CACHE_SIZE = 100
+cache = OrderedDict()
 
 def load_config(config_file):
     try:
@@ -82,37 +86,44 @@ def fetch_floatvalue(hrefs, paintseeds, float_list):
     headers = {'User-Agent': ua.random}
 
     for href in hrefs:
-        try:
-            api_url = base_api_url + href
-            response = requests.get(api_url, headers=headers)
-            response.raise_for_status()
+        if href in cache:
+            print(f"cached Float value: {cache[href].get('floatvalue')}, Paintseed: {cache[href].get('paintseed')}")
+            floatvalue = cache[href].get('floatvalue')
+            paintseed = cache[href].get('paintseed')
+        else:
+            try:
+                api_url = base_api_url + href
+                response = requests.get(api_url, headers=headers)
+                response.raise_for_status()
 
-            data = response.json()
-            floatvalue = data.get('iteminfo', {}).get('floatvalue', None)
-            paintseed = data.get('iteminfo', {}).get('paintseed', None)
-            
-            if floatvalue is not None:
-                print(f"Float value: {floatvalue}, Paintseed: {paintseed}")
-                
-                # Проверка условий в зависимости от наличия значений в списках
-                if not float_list and paintseeds:  # Только paintseeds
-                    if paintseed in paintseeds:
-                        winsound.Beep(2000, 500)
+                data = response.json()
+                floatvalue = data.get('iteminfo', {}).get('floatvalue', None)
+                paintseed = data.get('iteminfo', {}).get('paintseed', None)
 
-                elif not paintseeds and float_list:  # Только float_list
-                    if floatvalue < float_list:
-                        winsound.Beep(2000, 500)
-
-                elif paintseeds and float_list:  # Оба условия
-                    if paintseed in paintseeds or floatvalue < float_list:
-                        winsound.Beep(2000, 500)
+                if floatvalue is not None:
+                    print(f"Float value: {floatvalue}, Paintseed: {paintseed}")
                     
-            else:
-                print("Float value not found")
+                    if not float_list and paintseeds: 
+                        if paintseed in paintseeds:
+                            winsound.Beep(2000, 500)
 
-        except Exception as e:
-            print(f"Error fetching float value: {e}")
-            continue
+                    elif not paintseeds and float_list: 
+                        if floatvalue < float_list:
+                            winsound.Beep(2000, 500)
+
+                    elif paintseeds and float_list: 
+                        if paintseed in paintseeds or floatvalue < float_list:
+                            winsound.Beep(2000, 500)
+                else:
+                    print("Float value not found")
+
+                if len(cache) >= MAX_CACHE_SIZE:
+                    cache.popitem(last=False)  
+
+                cache[href] = {'floatvalue': floatvalue, 'paintseed': paintseed}
+            except Exception as e:
+                print(f"Error fetching float value: {e}")
+                continue
 
 
 if __name__ == "__main__":
@@ -137,8 +148,8 @@ if __name__ == "__main__":
                 if hrefs:
                     fetch_floatvalue(hrefs, paintseeds, float)  
 
-                time.sleep(uniform(1, 3)) 
+                time.sleep(uniform(1, 2)) 
 
-            time.sleep(uniform(4, 6)) 
+            time.sleep(uniform(3, 4)) 
     else:
         print("Failed to load configuration or proxies.")
