@@ -1,7 +1,4 @@
 import requests
-from bs4 import BeautifulSoup
-import re
-import json
 
 def fetch_hrefs(url, proxies=[], proxy_index=0, user_agent=None):
     headers = {
@@ -11,21 +8,25 @@ def fetch_hrefs(url, proxies=[], proxy_index=0, user_agent=None):
     proxy = proxies[proxy_index] if proxies else 'localhost'
 
     try:
-        url += '/render?start=0&count=10&currency=1&format=json'
+        url += '/render?start=0&count=10&currency=5&format=json'
         response = requests.get(url, headers=headers, proxies=proxy, timeout=3) if proxies else requests.get(url, headers=headers, timeout=3)
         response.raise_for_status()
 
-        data_size = len(response.content)
-        print(f"Загружено {data_size / (1024):.2f} KB данных")
         data = response.json()
         hrefs = []
         for listing in data["listinginfo"].values():
+            subtotal = listing.get("converted_price")
+            if not subtotal: continue
+            fee = listing.get("converted_fee")
+            total = subtotal + fee
+            
             listingid = listing["listingid"]
             assetid = listing["asset"]["id"]
             link_template = listing["asset"]["market_actions"][0]["link"]
             link = link_template.replace("%listingid%", listingid).replace("%assetid%", assetid)
             print(link)
-            hrefs.append(link)
+            iteminfo = {"link": link, "subtotal": subtotal, "fee": fee, "total": total, "listingid": listingid, "referer": url}
+            hrefs.append(iteminfo)
 
         print(f"Successfully fetched with proxy: {proxy}")
         return hrefs, proxy_index

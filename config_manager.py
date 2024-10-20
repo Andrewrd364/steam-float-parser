@@ -1,4 +1,6 @@
 import json
+from rookiepy import chrome, to_cookiejar, load
+import time
 
 def load_config(config_file):
     try:
@@ -34,3 +36,9 @@ def get_next_proxy(proxies, proxy_index):
         proxy_index = (proxy_index + 1) % len(proxies) 
         return proxy_index 
     return proxy_index
+
+def load_steam_cookies():
+    cookies = chrome(["https://steamcommunity.com/market/"])
+
+    cj = to_cookiejar(cookies)
+    return cj
