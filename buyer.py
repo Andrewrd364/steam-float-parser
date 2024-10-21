@@ -1,6 +1,7 @@
 import aiohttp
 import logger
 import asyncio
+import pygame
 
 async def buy_listing(href, ua, cookies, sessionid):
     url = f"https://steamcommunity.com/market/buylisting/{href['listingid']}"
@@ -24,6 +25,8 @@ async def buy_listing(href, ua, cookies, sessionid):
         "save_my_address": ""
     }
 
+    pygame.mixer.init()
+
     async with aiohttp.ClientSession() as session:
         async with session.post(url, headers=headers, data=formdata) as response:
             if response.status == 200:
@@ -31,8 +34,14 @@ async def buy_listing(href, ua, cookies, sessionid):
                 print("Покупка выполнена успешно!")
                 print(json_response)
                 logger.log_info(f'\ninspect link: {href["link"]}\ntotal: {href["total"]/100} rub\nresponse: {json_response}')
+
+                pygame.mixer.music.load("assets\sound\goida-okhlobystin.mp3")
+                pygame.mixer.music.play()
             else:
                 text_response = await response.text()
                 print(f"Ошибка: {response.status}")
                 print(text_response)
                 logger.log_error(f'\ninspect link: {href["link"]}\ntotal: {href["total"]/100} rub\nresponse: {text_response}')
+                
+                pygame.mixer.music.load("assets\sound\sad-meow-song (mp3cut.net).mp3")
+                pygame.mixer.music.play()
