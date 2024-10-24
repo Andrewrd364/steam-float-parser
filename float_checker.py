@@ -1,8 +1,6 @@
-from collections import OrderedDict
 import aiohttp
+from constants import cache, MAX_CACHE_SIZE
 
-MAX_CACHE_SIZE = 500
-cache = OrderedDict()
 
 async def fetch_floatvalue(href, paintseeds, float_list, user_agent):
     base_api_url = "https://api.csgotrader.app/float?url="

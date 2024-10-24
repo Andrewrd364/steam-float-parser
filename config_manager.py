@@ -1,6 +1,6 @@
 import json
-from rookiepy import chrome, to_cookiejar, load
 import time
+from constants import proxy_timeout, BLOCK_DURATION
 
 def load_config(config_file):
     try:
@@ -33,12 +33,36 @@ def load_proxies(proxy_file):
     
 def get_next_proxy(proxies, proxy_index):
     if proxies:
-        proxy_index = (proxy_index + 1) % len(proxies) 
-        return proxy_index 
+        while True:
+            proxy_index = (proxy_index + 1) % len(proxies)
+            if is_proxy_available(proxies[proxy_index]):
+                return proxy_index 
     return proxy_index
 
-def load_steam_cookies():
-    cookies = chrome(["https://steamcommunity.com/market/"])
+def is_proxy_available(proxy):
+    current_time = time.time()
+    proxy_key = proxy.get('http')
 
-    cj = to_cookiejar(cookies)
-    return cj
+    last_block_time = proxy_timeout.get(proxy_key)
+
+    if last_block_time and current_time - last_block_time < BLOCK_DURATION:
+        return False
+
+    return True
+
+def block_proxy(proxy):
+    proxy_key = proxy.get('http')
+    proxy_timeout[proxy_key] = time.time()
+    print(proxy_timeout)
+
+def load_steam_cookies(file_path='steam_cookies.txt'):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            steam_cookies = file.readline().strip()
+            return steam_cookies
+    except FileNotFoundError:
+        print(f"Файл {file_path} не найден.")
+        return None
+    except Exception as e:
+        print(f"Произошла ошибка при чтении файла: {e}")
+        return None

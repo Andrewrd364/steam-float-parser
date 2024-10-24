@@ -11,15 +11,20 @@ async def fetch_hrefs(url, proxy, user_agent=None):
 
         async with aiohttp.ClientSession() as session:
             if proxy:
-                async with session.get(url, headers=headers, proxy=proxy_url, timeout=3) as response:
+                async with session.get(url, headers=headers, proxy=proxy_url, timeout=4) as response:
                     response.raise_for_status()
                     data = await response.json()
             else:
-                async with session.get(url, headers=headers, timeout=3) as response:
+                async with session.get(url, headers=headers, timeout=4) as response:
                     response.raise_for_status()
                     data = await response.json()
 
             hrefs = []
+
+            if "listinginfo" not in data:
+                print(f"Key 'listinginfo' not found in response for URL: {url}")
+                return hrefs
+
             for listing in data["listinginfo"].values():
                 subtotal = listing.get("converted_price")
                 if not subtotal:
@@ -40,7 +45,7 @@ async def fetch_hrefs(url, proxy, user_agent=None):
 
     except aiohttp.ClientError as e:
         print(f"Error fetching page with proxy {proxy or 'No Proxy'}: {e}")
-        return []
+        return 429
     except asyncio.TimeoutError:
         print(f"Request timed out with proxy {proxy_url or 'No Proxy'}")
         return []
